@@ -20,12 +20,19 @@ JWT_REFRESH_MARGIN = 24 * 3600  # refresh the 7-day JWT when <1 day remains
 # ---- D-code property map (verified against a physical CX3550/01, 2026-06-27) ----
 # Shadow reported/desired codes. See notes/properties.md §3e.
 D_POWER = "D03102"        # power flag  0=off / 1=on
-D_SPEED = "D0310D"        # fan level   0..3  (manual speed)
-D_MODE = "D0310C"         # mode preset 1/2/3=stufe, 17=sleep, 130=natural (echoes -126)
+D_SPEED = "D0310D"        # fan level / current fan behavior
+D_MODE = "D0310C"         # mode selector; model-specific preset/manual values
 D_OSCILLATE = "D0320F"    # oscillation 23040=on / 0=off
 D_BEEP = "D03130"         # key-beep    0=off / 100=on
 D_TIMER_ACT = "D03110"    # timer: 0=off, else hours+1 (2=1h .. 13=12h)
 D_TIMER_MIN = "D03211"    # timer remaining minutes (READ-ONLY countdown)
+D_PET_LOCK = "D03103"     # AC3360 pet lock: 0=off / 1=on
+D_DISPLAY = "D03105"       # AC3360 display: 123=bright, 115=low, 0=off
+D_PM25 = "D03221"         # AC3360 PM2.5, µg/m³
+D_IAI = "D03120"           # AC3360 allergen index
+D_GAS_INDEX = "D03122"    # AC3360 raw gas index
+D_TEMPERATURE = "D03224"  # AC3360 temperature in tenths of °C
+D_HUMIDITY = "D03125"     # AC3360 relative humidity, %
 
 # Device meta codes (reported only)
 D_NAME = "D01S03"
@@ -81,6 +88,45 @@ TOPIC_UPDATE_DOCUMENTS = "$aws/things/{thing}/shadow/update/documents"
 # Manufacturer / model
 MANUFACTURER = "Philips"
 MODEL_CX3550 = "CX3550/01"
+MODEL_AC3360 = "AC3360/11"
+
+# Keep the two models' fan capabilities together so platform code does not
+# grow separate, repeated model checks. Unknown models retain CX3550 behavior.
+MODEL_CAPABILITIES = {
+    MODEL_CX3550: {
+        "translation_key": "cx3550",
+        "preset_to_mode": {PRESET_SLEEP: MODE_SLEEP, PRESET_NATURAL: MODE_NATURAL},
+        "mode_to_preset": {MODE_SLEEP: PRESET_SLEEP, MODE_NATURAL: PRESET_NATURAL},
+        "preset_modes": PRESET_MODES,
+        "oscillation": True,
+        "manual_modes": (1, 2, 3),
+    },
+    MODEL_AC3360: {
+        "translation_key": "ac3360",
+        "preset_to_mode": {
+            "auto": 0,
+            "eco": 16,
+            "sleep": 17,
+            "turbo": 18,
+            "pet_hair_boost": 49,
+        },
+        "mode_to_preset": {
+            0: "auto",
+            16: "eco",
+            17: "sleep",
+            18: "turbo",
+            49: "pet_hair_boost",
+        },
+        "preset_modes": ["auto", "eco", "sleep", "turbo", "pet_hair_boost"],
+        "oscillation": False,
+        "manual_modes": (1, 2, 3),
+    },
+}
+
+
+def get_model_capabilities(modelid: str | None) -> dict:
+    """Return capabilities for a model, preserving legacy CX3550 fallback."""
+    return MODEL_CAPABILITIES.get(modelid, MODEL_CAPABILITIES[MODEL_CX3550])
 
 # Reconnect backoff (seconds)
 RECONNECT_MIN = 2
@@ -103,6 +149,8 @@ UNIT_DURATION = UnitOfTime.SECONDS
 __all__ = [
     "DOMAIN", "CONF_USER_ID", "CONF_MSECRET", "CONF_EMAIL", "CONF_DEVICES", "JWT_REFRESH_MARGIN",
     "D_POWER", "D_SPEED", "D_MODE", "D_OSCILLATE", "D_BEEP",
+    "D_PET_LOCK", "D_DISPLAY", "D_PM25", "D_IAI", "D_GAS_INDEX",
+    "D_TEMPERATURE", "D_HUMIDITY",
     "D_TIMER_ACT", "D_TIMER_MIN",
     "D_NAME", "D_TYPE", "D_MODEL", "D_SERIAL", "D_SWVERSION",
     "D_RSSI", "D_RUNTIME", "D_FREE_MEMORY", "D_CONNECT_TYPE",
@@ -114,7 +162,8 @@ __all__ = [
     "TOPIC_GET", "TOPIC_GET_ACCEPTED", "TOPIC_GET_REJECTED",
     "TOPIC_UPDATE", "TOPIC_UPDATE_ACCEPTED", "TOPIC_UPDATE_REJECTED",
     "TOPIC_UPDATE_DOCUMENTS",
-    "MANUFACTURER", "MODEL_CX3550",
+    "MANUFACTURER", "MODEL_CX3550", "MODEL_AC3360", "MODEL_CAPABILITIES",
+    "get_model_capabilities",
     "RECONNECT_MIN", "RECONNECT_MAX", "REFRESH_INTERVAL",
     "UNIT_TIMER_MIN", "UNIT_SIGNAL", "UNIT_DURATION",
 ]

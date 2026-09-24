@@ -1,4 +1,4 @@
-# Philips Air+ (CX3550/01) for Home Assistant
+# Philips Air+ fans for Home Assistant
 
 🇬🇧 English | [🇩🇪 Deutsch](README.de.md)
 
@@ -88,6 +88,25 @@ captures.
 
 All control writes are verified against a physical CX3550/01: power, speed
 1/2/3, sleep/natural presets, oscillate, beep, timer on/off and duration.
+
+### Philips PureProtect Pet 3000 Series AC3360/11
+
+The integration also supports the **Philips AC3360/11 PureProtect Pet 3000
+Series** (device type **LavenderLite**). This model's support is based on
+real-device reverse engineering (firmware 0.2.1) and has not received the same
+full validation as CX3550/01.
+
+Supported AC3360 functionality:
+
+- Power and manual fan speeds Low / Medium / High (33% / 67% / 100%)
+- Auto, Eco, Sleep, Turbo, and Pet Hair Boost presets
+- Pet lock, display brightness (bright / low / off), and beep
+- PM2.5, allergen index, raw gas index, temperature, and humidity sensors
+
+AC3360 does not expose oscillation. Its light, mood-light, and air-quality-light
+features are currently unmapped and are not supported. The gas index is shown
+without a physical concentration unit; the verified raw value `1` is displayed
+as `L1`.
 
 ## Troubleshooting
 

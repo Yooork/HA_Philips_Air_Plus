@@ -30,13 +30,12 @@ from .const import (
     D_POWER,
     D_SPEED,
     MANUFACTURER,
-    MODE_TO_PRESET,
     MODEL_CX3550,
+    MODEL_AC3360,
     OSC_OFF,
     OSC_ON_WRITE,
-    PRESET_MODES,
-    PRESET_TO_MODE,
     SPEED_COUNT,
+    get_model_capabilities,
 )
 from .coordinator import PhilipsAirplusCoordinator
 
@@ -73,21 +72,25 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
 
     _attr_has_entity_name = True
     _attr_name = None  # use the device name
-    _attr_translation_key = "cx3550"  # localizes preset_mode display, see strings.json
     _attr_speed_count = SPEED_COUNT
-    _attr_preset_modes = PRESET_MODES
 
     def __init__(self, coordinator: PhilipsAirplusCoordinator) -> None:
         super().__init__(coordinator)
         self.coordinator = coordinator
+        self._capabilities = get_model_capabilities(
+            (coordinator.device_info or {}).get("modelid")
+        )
+        self._attr_translation_key = self._capabilities["translation_key"]
+        self._attr_preset_modes = self._capabilities["preset_modes"]
         self._attr_unique_id = f"{coordinator.device_id}_fan"
         self._attr_supported_features = (
             FanEntityFeature.TURN_ON
             | FanEntityFeature.TURN_OFF
             | FanEntityFeature.SET_SPEED
             | FanEntityFeature.PRESET_MODE
-            | FanEntityFeature.OSCILLATE
         )
+        if self._capabilities["oscillation"]:
+            self._attr_supported_features |= FanEntityFeature.OSCILLATE
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -118,6 +121,12 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         rep = self._rep()
         if int(rep.get(D_POWER, 0)) != 1:
             return 0
+        if (self.coordinator.device_info or {}).get("modelid") == MODEL_AC3360:
+            # D0310D is firmware-managed in presets (notably Auto); only show
+            # the percentage when D0310C says the fan is in manual mode.
+            mode = _norm_mode(rep.get(D_MODE))
+            if mode not in self._capabilities["manual_modes"]:
+                return None
         level = rep.get(D_SPEED)
         try:
             return _LEVEL_TO_PCT.get(int(level), None)
@@ -127,7 +136,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     @property
     def preset_mode(self) -> str | None:
         mode = _norm_mode(self._rep().get(D_MODE))
-        return MODE_TO_PRESET.get(mode)
+        return self._capabilities["mode_to_preset"].get(mode)
 
     @property
     def oscillating(self) -> bool:
@@ -144,8 +153,9 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         **kwargs: Any,
     ) -> None:
         desired: dict = {D_POWER: 1}
-        if preset_mode in PRESET_TO_MODE:
-            desired[D_MODE] = PRESET_TO_MODE[preset_mode]
+        preset_to_mode = self._capabilities["preset_to_mode"]
+        if preset_mode in preset_to_mode:
+            desired[D_MODE] = preset_to_mode[preset_mode]
         elif percentage is not None:
             level = _pct_to_level(percentage)
             if level > 0:
@@ -163,13 +173,16 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         await self.coordinator.async_set_desired(desired)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        if preset_mode not in PRESET_TO_MODE:
+        preset_to_mode = self._capabilities["preset_to_mode"]
+        if preset_mode not in preset_to_mode:
             return
         await self.coordinator.async_set_desired(
-            {D_POWER: 1, D_MODE: PRESET_TO_MODE[preset_mode]}
+            {D_POWER: 1, D_MODE: preset_to_mode[preset_mode]}
         )
 
     async def async_oscillate(self, oscillating: bool) -> None:
+        if not self._capabilities["oscillation"]:
+            return
         await self.coordinator.async_set_desired(
             {D_OSCILLATE: OSC_ON_WRITE if oscillating else OSC_OFF}
         )
