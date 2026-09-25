@@ -74,6 +74,7 @@ MODE_TO_PRESET = {MODE_SLEEP: PRESET_SLEEP, MODE_NATURAL: PRESET_NATURAL}
 
 # Manual speed steps (1/2/3) mapped to HA percentage with speed_count=3.
 SPEED_COUNT = 3
+AC3360_SPEED_COUNT = 5
 # ordered_list_step default HA gives [33, 67, 100] for 3 speeds; level = round(pct/100*3)
 
 # MQTT shadow topics
@@ -100,7 +101,6 @@ MODEL_CAPABILITIES = {
         "preset_modes": PRESET_MODES,
         "oscillation": True,
         "percentage_control": True,
-        "speed_count": SPEED_COUNT,
     },
     MODEL_AC3360: {
         "translation_key": "ac3360",
@@ -120,7 +120,10 @@ MODEL_CAPABILITIES = {
         },
         "preset_modes": ["auto", "sleep", "middle", "strong", "pet_hair_boost"],
         "oscillation": False,
-        "percentage_control": False,
+        "percentage_control": True,
+        "speed_count": AC3360_SPEED_COUNT,
+        "percentage_modes": {20: 0, 40: 17, 60: 2, 80: 16, 100: 49},
+        "mode_to_percentage": {0: 20, 17: 40, 2: 60, 16: 80, 49: 100},
         "mode_names": {
             0: "auto",
             17: "sleep",
@@ -170,6 +173,7 @@ __all__ = [
     "MODE_SLEEP", "MODE_NATURAL", "PRESET_SLEEP", "PRESET_NATURAL",
     "PRESET_MODES", "PRESET_TO_MODE", "MODE_TO_PRESET",
     "SPEED_COUNT",
+    "AC3360_SPEED_COUNT",
     "TOPIC_GET", "TOPIC_GET_ACCEPTED", "TOPIC_GET_REJECTED",
     "TOPIC_UPDATE", "TOPIC_UPDATE_ACCEPTED", "TOPIC_UPDATE_REJECTED",
     "TOPIC_UPDATE_DOCUMENTS",

@@ -98,12 +98,13 @@ full validation as CX3550/01.
 
 Supported AC3360 functionality:
 
-- Power and five named fan presets: Auto, Sleep, Medium, Strong, and Pet Hair Boost
+- Power, five named fan presets in Home Assistant, and a five-step percentage control for Apple Home, all on the same fan entity
 - Pet lock, display brightness (bright / low / off), and beep
 - PM2.5, allergen index, raw gas index, temperature, and humidity sensors
 
-The presets are the only AC3360 mode controls. “Strong” selects D0310C=16
-(the device's Eco value); D0310D remains device-reported state.
+The presets and percentage control operate the same five modes through D0310C,
+so their readback stays synchronized. “Strong” selects D0310C=16 (the device's
+Eco value); D0310D remains device-reported state and is never written.
 
 AC3360 does not expose oscillation. Its light, mood-light, and air-quality-light
 features are currently unmapped and are not supported. The gas index is shown

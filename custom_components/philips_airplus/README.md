@@ -31,12 +31,13 @@ power, speed 1/2/3, sleep (D0310C=17), natural (D0310C=130), oscillate
 
 The **Philips PureProtect Pet 3000 Series AC3360/11**, device type
 **LavenderLite**, is supported based on real-device reverse engineering
-(firmware 0.2.1). Supported functions are power and five named fan presets
-(Auto/Sleep/Medium/Strong/Pet Hair Boost), pet lock, display brightness, beep, PM2.5,
+(firmware 0.2.1). Its single fan entity provides five named presets in Home
+Assistant and a five-step percentage control for Apple Home. Both control the
+same modes. Other supported functions are power, pet lock, display brightness, beep, PM2.5,
 allergen index, raw gas index, temperature, and humidity. Its light and
 mood-light features are unmapped; oscillation is not available on this model.
-The presets are the only AC3360 mode controls; “Strong” selects D0310C=16 (the
-device's Eco value), and D0310D remains device-reported state.
+“Strong” selects D0310C=16 (the device's Eco value). D0310D remains
+device-reported state and is never written.
 Gas index has no physical unit; verified raw value `1` is presented as `L1`.
 
 ## Setup

@@ -105,12 +105,13 @@ noch nicht so umfassend validiert wie die des CX3550/01.
 
 Unterstützte AC3360-Funktionen:
 
-- Ein/Aus und fünf benannte Lüfter-Presets: Auto, Ruhemodus, Mitte, Stark und Fellhaar-Boost
+- Ein/Aus sowie fünf benannte Presets in Home Assistant und ein fünfstufiger Prozentregler für Apple Home auf derselben Fan-Entität
 - Haustiersperre, Displayhelligkeit (Hell / Niedrig / Aus) und Piepton
 - PM2.5-, Allergenindex-, roher Gasindex-, Temperatur- und Luftfeuchtigkeitssensoren
 
-Die Presets sind die einzige AC3360-Modussteuerung. „Stark“ setzt D0310C=16
-(den Eco-Wert des Geräts); D0310D bleibt ein vom Gerät gemeldeter Zustand.
+Presets und Prozentregler steuern dieselben fünf Modi über D0310C und bleiben
+beim Auslesen synchron. „Stark“ setzt D0310C=16 (den Eco-Wert des Geräts);
+D0310D bleibt ein vom Gerät gemeldeter Zustand und wird nie geschrieben.
 
 Der AC3360 bietet keine Oszillation. Licht-, Stimmungslicht- und
 Luftqualitätslicht-Funktionen sind noch nicht zugeordnet und werden nicht
