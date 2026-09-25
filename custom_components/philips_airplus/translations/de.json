@@ -54,9 +54,9 @@
           "preset_mode": {
             "state": {
               "auto": "Auto",
-              "eco": "Öko",
               "sleep": "Ruhemodus",
-              "turbo": "Turbo",
+              "middle": "Mitte",
+              "strong": "Stark",
               "pet_hair_boost": "Fellhaar-Boost"
             }
           }
