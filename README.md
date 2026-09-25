@@ -98,12 +98,12 @@ full validation as CX3550/01.
 
 Supported AC3360 functionality:
 
-- Power and a five-step fan percentage slider: Auto, Sleep, Medium, Strong, and Pet Hair Boost (20–100%)
+- Power and five named fan presets: Auto, Sleep, Medium, Strong, and Pet Hair Boost
 - Pet lock, display brightness (bright / low / off), and beep
 - PM2.5, allergen index, raw gas index, temperature, and humidity sensors
 
-The slider is the only AC3360 mode control. “Strong” selects D0310C=16 (the
-device's Eco value); D0310D remains device-reported state.
+The presets are the only AC3360 mode controls. “Strong” selects D0310C=16
+(the device's Eco value); D0310D remains device-reported state.
 
 AC3360 does not expose oscillation. Its light, mood-light, and air-quality-light
 features are currently unmapped and are not supported. The gas index is shown

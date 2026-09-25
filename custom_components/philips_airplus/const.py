@@ -74,7 +74,6 @@ MODE_TO_PRESET = {MODE_SLEEP: PRESET_SLEEP, MODE_NATURAL: PRESET_NATURAL}
 
 # Manual speed steps (1/2/3) mapped to HA percentage with speed_count=3.
 SPEED_COUNT = 3
-AC3360_SPEED_COUNT = 5
 # ordered_list_step default HA gives [33, 67, 100] for 3 speeds; level = round(pct/100*3)
 
 # MQTT shadow topics
@@ -101,27 +100,27 @@ MODEL_CAPABILITIES = {
         "preset_modes": PRESET_MODES,
         "oscillation": True,
         "percentage_control": True,
+        "speed_count": SPEED_COUNT,
     },
     MODEL_AC3360: {
         "translation_key": "ac3360",
-        "preset_to_mode": {},
-        "mode_to_preset": {},
-        "preset_modes": [],
-        "oscillation": False,
-        "percentage_control": True,
-        "speed_count": AC3360_SPEED_COUNT,
-        "percentage_modes": {20: 0, 40: 17, 60: 2, 80: 16, 100: 49},
-        "mode_to_percentage": {
-            0: 20,
-            17: 40,
-            2: 60,
-            16: 80,
-            49: 100,
-            # Hidden but known modes display the nearest supported slider step.
-            1: 60,
-            3: 60,
-            18: 80,
+        "preset_to_mode": {
+            "auto": 0,
+            "sleep": 17,
+            "middle": 2,
+            "strong": 16,
+            "pet_hair_boost": 49,
         },
+        "mode_to_preset": {
+            0: "auto",
+            17: "sleep",
+            2: "middle",
+            16: "strong",
+            49: "pet_hair_boost",
+        },
+        "preset_modes": ["auto", "sleep", "middle", "strong", "pet_hair_boost"],
+        "oscillation": False,
+        "percentage_control": False,
         "mode_names": {
             0: "auto",
             17: "sleep",
