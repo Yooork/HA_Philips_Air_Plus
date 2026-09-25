@@ -105,13 +105,12 @@ noch nicht so umfassend validiert wie die des CX3550/01.
 
 Unterstützte AC3360-Funktionen:
 
-- Ein/Aus und eine Modusauswahl: Auto, Ruhemodus, Mitte, Stark und Fellhaar-Boost
+- Ein/Aus und ein fünfstufiger Lüfter-Prozentregler: Auto, Ruhemodus, Mitte, Stark und Fellhaar-Boost (20–100%)
 - Haustiersperre, Displayhelligkeit (Hell / Niedrig / Aus) und Piepton
 - PM2.5-, Allergenindex-, roher Gasindex-, Temperatur- und Luftfeuchtigkeitssensoren
 
-Der AC3360 bietet keine separate Prozentsteuerung der Lüftergeschwindigkeit.
-„Stark“ setzt D0310C=16 (den Eco-Wert des Geräts); D0310D bleibt ein vom Gerät
-gemeldeter Zustand.
+Der Regler ist die einzige AC3360-Modussteuerung. „Stark“ setzt D0310C=16
+(den Eco-Wert des Geräts); D0310D bleibt ein vom Gerät gemeldeter Zustand.
 
 Der AC3360 bietet keine Oszillation. Licht-, Stimmungslicht- und
 Luftqualitätslicht-Funktionen sind noch nicht zugeordnet und werden nicht
