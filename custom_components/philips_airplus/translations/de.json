@@ -69,7 +69,7 @@
     "select": {
       "display_brightness": {
         "name": "Displayhelligkeit",
-        "options": { "bright": "Hell", "low": "Niedrig", "off": "Aus" }
+        "options": { "off": "Aus", "low": "Niedrig", "bright": "Hell" }
       }
     },
     "switch": {

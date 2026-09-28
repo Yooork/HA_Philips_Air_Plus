@@ -107,6 +107,23 @@ readback stays synchronized. Slider points are 1/10/20/35/50/60/85/100, where
 1% selects Auto and 0% turns the fan off. D0310D remains device-reported state
 and is never written.
 
+Measured power on an AC3360/11 test unit:
+
+| Mode | Measured power |
+| --- | ---: |
+| Ruhemodus / Sleep | 3,0 W |
+| Niedrig / Low | 5,2 W |
+| Mitte / Medium | 9,8 W |
+| Hoch / High | 18,0 W |
+| Öko / Eco | 27,0 W |
+| Turbo | 51,0 W |
+| Fellhaar-Boost / Pet Hair Boost | 73,9 W |
+
+These are real measurements from an AC3360/11 test unit, not official Philips
+specifications. Results may vary slightly with the unit, mains voltage, filter
+condition, and operating conditions. Auto is omitted because its power draw
+changes dynamically.
+
 AC3360 does not expose oscillation. Its light, mood-light, and air-quality-light
 features are currently unmapped and are not supported. The gas index is shown
 without a physical concentration unit; the verified raw value `1` is displayed

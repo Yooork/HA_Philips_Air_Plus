@@ -112,6 +112,16 @@ TOPIC_UPDATE_DOCUMENTS = "$aws/things/{thing}/shadow/update/documents"
 MANUFACTURER = "Philips"
 MODEL_CX3550 = "CX3550/01"
 MODEL_AC3360 = "AC3360/11"
+MODEL_TYPE_AC3360 = "LavenderLite"
+
+
+def is_ac3360_device(device_info: dict | None) -> bool:
+    """Recognize AC3360 only from its exact model id or exact device type."""
+    device_info = device_info or {}
+    return (
+        device_info.get("modelid") == MODEL_AC3360
+        or device_info.get("type") == MODEL_TYPE_AC3360
+    )
 
 # Keep the two models' fan capabilities together so platform code does not
 # grow separate, repeated model checks. Unknown models retain CX3550 behavior.
@@ -140,8 +150,12 @@ MODEL_CAPABILITIES = {
 }
 
 
-def get_model_capabilities(modelid: str | None) -> dict:
+def get_model_capabilities(
+    modelid: str | None, device_type: str | None = None
+) -> dict:
     """Return capabilities for a model, preserving legacy CX3550 fallback."""
+    if modelid == MODEL_AC3360 or device_type == MODEL_TYPE_AC3360:
+        return MODEL_CAPABILITIES[MODEL_AC3360]
     return MODEL_CAPABILITIES.get(modelid, MODEL_CAPABILITIES[MODEL_CX3550])
 
 # Reconnect backoff (seconds)
@@ -179,8 +193,8 @@ __all__ = [
     "TOPIC_GET", "TOPIC_GET_ACCEPTED", "TOPIC_GET_REJECTED",
     "TOPIC_UPDATE", "TOPIC_UPDATE_ACCEPTED", "TOPIC_UPDATE_REJECTED",
     "TOPIC_UPDATE_DOCUMENTS",
-    "MANUFACTURER", "MODEL_CX3550", "MODEL_AC3360", "MODEL_CAPABILITIES",
-    "get_model_capabilities",
+    "MANUFACTURER", "MODEL_CX3550", "MODEL_AC3360", "MODEL_TYPE_AC3360",
+    "MODEL_CAPABILITIES", "get_model_capabilities", "is_ac3360_device",
     "RECONNECT_MIN", "RECONNECT_MAX", "REFRESH_INTERVAL",
     "UNIT_TIMER_MIN", "UNIT_SIGNAL", "UNIT_DURATION",
 ]

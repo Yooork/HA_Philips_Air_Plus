@@ -13,6 +13,7 @@ percentage slider to the same reported modes.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
@@ -30,13 +31,17 @@ from .const import (
     D_SPEED,
     AC3360_PERCENTAGE_TO_MODE,
     MANUFACTURER,
+    MODEL_AC3360,
     MODEL_CX3550,
     OSC_OFF,
     OSC_ON_WRITE,
     SPEED_COUNT,
     get_model_capabilities,
+    is_ac3360_device,
 )
 from .coordinator import PhilipsAirplusCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 # Manual speed level <-> HA percentage (speed_count=3 -> [33, 67, 100]).
 _LEVEL_TO_PCT = {0: 0, 1: 33, 2: 67, 3: 100}
@@ -49,12 +54,16 @@ def _pct_to_level(pct: int) -> int:
     return round(pct / 100 * SPEED_COUNT)
 
 
-def _norm_mode(v) -> int | None:
+def _norm_mode(v, *, safe_overflow: bool = False) -> int | None:
     """D0310C may echo as a signed byte (130 -> -126); normalize to unsigned."""
     try:
         return int(v) & 0xFF
-    except (TypeError, ValueError, OverflowError):
+    except (TypeError, ValueError):
         return None
+    except OverflowError:
+        if safe_overflow:
+            return None
+        raise
 
 
 async def async_setup_entry(
@@ -74,16 +83,33 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     _attr_speed_count = None
 
     def __init__(self, coordinator: PhilipsAirplusCoordinator) -> None:
+        device_info = coordinator.device_info or {}
+        capabilities = get_model_capabilities(
+            device_info.get("modelid"), device_info.get("type")
+        )
+        is_ac3360 = is_ac3360_device(device_info)
+        # Set before CoordinatorEntity initialization so a cached HA property
+        # can never observe a default/None value for AC3360.
+        if is_ac3360:
+            self._attr_speed_count = 100
         super().__init__(coordinator)
         self.coordinator = coordinator
-        self._capabilities = get_model_capabilities(
-            (coordinator.device_info or {}).get("modelid")
-        )
+        self._capabilities = capabilities
         self._attr_translation_key = self._capabilities["translation_key"]
         self._attr_preset_modes = self._capabilities["preset_modes"]
-        self._attr_speed_count = self._capabilities.get("speed_count")
+        if not is_ac3360:
+            self._attr_speed_count = self._capabilities.get("speed_count")
         self._attr_unique_id = f"{coordinator.device_id}_fan"
         self._attr_supported_features = _supported_features(self._capabilities)
+        if is_ac3360:
+            _LOGGER.debug(
+                "AC3360 fan %s initialized (modelid=%r, type=%r, speed_count=%s, percentage_step=%s)",
+                coordinator.device_id,
+                device_info.get("modelid"),
+                device_info.get("type"),
+                self.speed_count,
+                self.percentage_step,
+            )
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -92,7 +118,11 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
             identifiers={(DOMAIN, self.coordinator.device_id)},
             name=di.get("name") or di.get("device_alias"),
             manufacturer=MANUFACTURER,
-            model=di.get("modelid") or MODEL_CX3550,
+            model=(
+                MODEL_AC3360
+                if is_ac3360_device(di)
+                else di.get("modelid") or MODEL_CX3550
+            ),
             sw_version=di.get("swversion"),
             serial_number=di.get("mac"),
         )
@@ -107,6 +137,8 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
 
     @property
     def is_on(self) -> bool:
+        if not self._is_ac3360:
+            return int(self._rep().get(D_POWER, 0)) == 1
         try:
             return int(self._rep().get(D_POWER, 0)) == 1
         except (TypeError, ValueError, OverflowError):
@@ -115,6 +147,15 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     @property
     def percentage(self) -> int | None:
         rep = self._rep()
+        if not self._is_ac3360:
+            if int(rep.get(D_POWER, 0)) != 1:
+                return 0
+            if not self._capabilities["percentage_control"]:
+                return None
+            try:
+                return _LEVEL_TO_PCT.get(int(rep.get(D_SPEED)), None)
+            except (TypeError, ValueError):
+                return None
         try:
             is_on = int(rep.get(D_POWER, 0)) == 1
         except (TypeError, ValueError, OverflowError):
@@ -123,19 +164,21 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
             return 0
         mode_to_percentage = self._capabilities.get("mode_to_percentage")
         if mode_to_percentage is not None:
-            mode = _norm_mode(rep.get(D_MODE))
+            mode = _norm_mode(rep.get(D_MODE), safe_overflow=True)
             return mode_to_percentage.get(mode)
         if not self._capabilities["percentage_control"]:
             return None
         level = rep.get(D_SPEED)
         try:
             return _LEVEL_TO_PCT.get(int(level), None)
-        except (TypeError, ValueError, OverflowError):
+        except (TypeError, ValueError):
             return None
 
     @property
     def preset_mode(self) -> str | None:
-        mode = _norm_mode(self._rep().get(D_MODE))
+        mode = _norm_mode(
+            self._rep().get(D_MODE), safe_overflow=self._is_ac3360
+        )
         return self._capabilities["mode_to_preset"].get(mode)
 
     @property
@@ -143,7 +186,9 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         mode_names = self._capabilities.get("mode_names")
         if mode_names is None:
             return None
-        mode = _norm_mode(self._rep().get(D_MODE))
+        mode = _norm_mode(
+            self._rep().get(D_MODE), safe_overflow=self._is_ac3360
+        )
         name = mode_names.get(mode)
         return {"current_mode_name": name} if name is not None else None
 
@@ -173,7 +218,9 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
                 else:
                     desired[D_MODE] = mode
             else:
-                current_mode = _norm_mode(self._rep().get(D_MODE))
+                current_mode = _norm_mode(
+                    self._rep().get(D_MODE), safe_overflow=True
+                )
                 if current_mode not in self._capabilities["mode_names"]:
                     desired[D_MODE] = 0
             await self.coordinator.async_set_desired(desired)

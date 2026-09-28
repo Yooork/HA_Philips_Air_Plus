@@ -69,7 +69,7 @@
     "select": {
       "display_brightness": {
         "name": "Display brightness",
-        "options": { "bright": "Bright", "low": "Low", "off": "Off" }
+        "options": { "off": "Off", "low": "Low", "bright": "Bright" }
       }
     },
     "switch": {

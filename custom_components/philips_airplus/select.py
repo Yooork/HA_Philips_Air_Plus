@@ -13,12 +13,13 @@ from .const import (
     D_DISPLAY,
     DOMAIN,
     MANUFACTURER,
-    MODEL_CX3550,
     MODEL_AC3360,
+    MODEL_CX3550,
+    is_ac3360_device,
 )
 from .coordinator import PhilipsAirplusCoordinator
 
-_BRIGHTNESS_TO_CODE = {"bright": 123, "low": 115, "off": 0}
+_BRIGHTNESS_TO_CODE = {"off": 0, "low": 115, "bright": 123}
 _CODE_TO_BRIGHTNESS = {code: name for name, code in _BRIGHTNESS_TO_CODE.items()}
 
 
@@ -29,7 +30,7 @@ async def async_setup_entry(
     async_add_entities(
         PhilipsAirplusDisplayBrightness(coordinator)
         for coordinator in store["coordinators"].values()
-        if (coordinator.device_info or {}).get("modelid") == MODEL_AC3360
+        if is_ac3360_device(coordinator.device_info)
     )
 
 
@@ -53,7 +54,11 @@ class PhilipsAirplusDisplayBrightness(CoordinatorEntity, SelectEntity):
             identifiers={(DOMAIN, self.coordinator.device_id)},
             name=di.get("name") or di.get("device_alias"),
             manufacturer=MANUFACTURER,
-            model=di.get("modelid") or MODEL_CX3550,
+            model=(
+                MODEL_AC3360
+                if is_ac3360_device(di)
+                else di.get("modelid") or MODEL_CX3550
+            ),
             sw_version=di.get("swversion"),
             serial_number=di.get("mac"),
         )
