@@ -53,7 +53,7 @@ def _norm_mode(v) -> int | None:
     """D0310C may echo as a signed byte (130 -> -126); normalize to unsigned."""
     try:
         return int(v) & 0xFF
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -72,6 +72,8 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     _attr_has_entity_name = True
     _attr_name = None  # use the device name
     _attr_speed_count = None
+    # A safe default is available even during the earliest entity property read.
+    _last_manual_percentage = 35
 
     def __init__(self, coordinator: PhilipsAirplusCoordinator) -> None:
         super().__init__(coordinator)
@@ -108,12 +110,19 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
 
     @property
     def is_on(self) -> bool:
-        return int(self._rep().get(D_POWER, 0)) == 1
+        try:
+            return int(self._rep().get(D_POWER, 0)) == 1
+        except (TypeError, ValueError, OverflowError):
+            return False
 
     @property
     def percentage(self) -> int | None:
         rep = self._rep()
-        if int(rep.get(D_POWER, 0)) != 1:
+        try:
+            is_on = int(rep.get(D_POWER, 0)) == 1
+        except (TypeError, ValueError, OverflowError):
+            is_on = False
+        if not is_on:
             return 0
         mode_to_percentage = self._capabilities.get("mode_to_percentage")
         if mode_to_percentage is not None:
@@ -131,7 +140,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         level = rep.get(D_SPEED)
         try:
             return _LEVEL_TO_PCT.get(int(level), None)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return None
 
     @property

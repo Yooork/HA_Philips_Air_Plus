@@ -75,7 +75,7 @@ class PhilipsAirplusDisplayBrightness(CoordinatorEntity, SelectEntity):
     def current_option(self) -> str | None:
         try:
             code = int((self.coordinator.data or {}).get(D_DISPLAY))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return None
         return _CODE_TO_BRIGHTNESS.get(code)
 
@@ -118,7 +118,7 @@ class PhilipsAirplusModeSelect(CoordinatorEntity, SelectEntity):
     def current_option(self) -> str | None:
         try:
             mode = int((self.coordinator.data or {}).get(D_MODE)) & 0xFF
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return None
         return next(
             (key for key, code, _percentage in AC3360_MODE_OPTIONS if code == mode),

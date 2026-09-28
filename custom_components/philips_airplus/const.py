@@ -131,6 +131,9 @@ MODEL_CAPABILITIES = {
         "preset_modes": ["auto"],
         "oscillation": False,
         "percentage_control": True,
+        # HA derives percentage_step as 100 / speed_count. Keep fine slider
+        # resolution for the irregular AC3360 mode percentages.
+        "speed_count": 100,
         "mode_to_percentage": AC3360_MODE_TO_PERCENTAGE,
         "mode_names": {code: key for key, code, _pct in AC3360_MODE_OPTIONS},
     },
