@@ -8,8 +8,8 @@ Maps the verified D-code shadow state to a Home Assistant fan entity:
   oscillate       CX3550 only: D0320F 23040=on / 0=off
 
 CX3550 exposes manual speeds as percentages and its sleep/natural presets.
-AC3360 exposes five named presets and a five-step percentage control, both
-derived from and writing only D0310C; D0310D is never written for that model.
+AC3360 exposes Auto as its sole fan preset and maps a fine percentage slider to
+seven named manual modes, all derived from and writing only D0310C.
 """
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ from .const import (
     D_OSCILLATE,
     D_POWER,
     D_SPEED,
+    AC3360_PERCENTAGE_TO_MODE,
     MANUFACTURER,
     MODEL_CX3550,
     OSC_OFF,
@@ -83,6 +84,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         self._attr_speed_count = self._capabilities.get("speed_count")
         self._attr_unique_id = f"{coordinator.device_id}_fan"
         self._attr_supported_features = _supported_features(self._capabilities)
+        self._last_manual_percentage = 35
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -115,8 +117,15 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
             return 0
         mode_to_percentage = self._capabilities.get("mode_to_percentage")
         if mode_to_percentage is not None:
-            # Derive Apple Home's slider from the same reported mode as preset_mode.
-            return mode_to_percentage.get(_norm_mode(rep.get(D_MODE)))
+            mode = _norm_mode(rep.get(D_MODE))
+            if mode == 0:
+                return self._last_manual_percentage
+            manual_percentage = mode_to_percentage.get(mode)
+            if manual_percentage is not None:
+                self._last_manual_percentage = manual_percentage
+                return manual_percentage
+            # Keep the last safe slider value for unknown future firmware modes.
+            return self._last_manual_percentage
         if not self._capabilities["percentage_control"]:
             return None
         level = rep.get(D_SPEED)
@@ -155,24 +164,29 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     ) -> None:
         desired: dict = {D_POWER: 1}
         preset_to_mode = self._capabilities["preset_to_mode"]
+        if self._is_ac3360:
+            if preset_mode == "auto":
+                desired[D_MODE] = 0
+            elif percentage is not None:
+                mode = _ac3360_percentage_to_mode(percentage)
+                if mode is None:
+                    desired = {D_POWER: 0}
+                else:
+                    desired[D_MODE] = mode
+            else:
+                current_mode = _norm_mode(self._rep().get(D_MODE))
+                if current_mode not in self._capabilities["mode_names"]:
+                    desired[D_MODE] = 0
+            await self.coordinator.async_set_desired(desired)
+            return
         if preset_mode in preset_to_mode:
             desired[D_MODE] = preset_to_mode[preset_mode]
-        elif percentage is not None and self._capabilities.get("percentage_modes") is not None:
-            mode = _ac3360_percentage_to_mode(percentage)
-            if mode is None:
-                desired = {D_POWER: 0}
-            else:
-                desired[D_MODE] = mode
         elif percentage is not None and self._capabilities["percentage_control"]:
             level = _pct_to_level(percentage)
             if level > 0:
                 desired[D_SPEED] = level
                 desired[D_MODE] = level  # manual mode mirrors the level
             desired[D_POWER] = 1 if level > 0 else 0
-        elif self._capabilities.get("percentage_modes") is not None:
-            current_mode = _norm_mode(self._rep().get(D_MODE))
-            if current_mode not in self._capabilities["mode_names"]:
-                desired[D_MODE] = 0
         await self.coordinator.async_set_desired(desired)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -181,7 +195,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     async def async_set_percentage(self, percentage: int) -> None:
         if not self._capabilities["percentage_control"]:
             return
-        if self._capabilities.get("percentage_modes") is not None:
+        if self._is_ac3360:
             mode = _ac3360_percentage_to_mode(percentage)
             if mode is None:
                 await self.coordinator.async_set_desired({D_POWER: 0})
@@ -200,6 +214,10 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
             {D_POWER: 1, D_MODE: preset_to_mode[preset_mode]}
         )
 
+    @property
+    def _is_ac3360(self) -> bool:
+        return self._capabilities.get("mode_to_percentage") is not None
+
     async def async_oscillate(self, oscillating: bool) -> None:
         if not self._capabilities["oscillation"]:
             return
@@ -209,22 +227,15 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
 
 
 def _ac3360_percentage_to_mode(percentage: int) -> int | None:
-    """Map an AC3360 percentage to a named D0310C mode; zero means off."""
+    """Map a slider value to the nearest canonical manual AC3360 mode."""
     try:
         pct = max(0, min(100, int(percentage)))
     except (TypeError, ValueError):
         return None
     if pct == 0:
         return None
-    if pct <= 20:
-        return 0
-    if pct <= 40:
-        return 17
-    if pct <= 60:
-        return 2
-    if pct <= 80:
-        return 16
-    return 49
+    # On ties, choose the higher slider point.
+    return min(AC3360_PERCENTAGE_TO_MODE, key=lambda item: (abs(item[0] - pct), -item[0]))[1]
 
 
 def _supported_features(capabilities: dict) -> FanEntityFeature:

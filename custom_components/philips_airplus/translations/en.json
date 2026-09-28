@@ -53,17 +53,26 @@
         "state_attributes": {
           "preset_mode": {
             "state": {
-              "auto": "Auto",
-              "sleep": "Sleep",
-              "middle": "Medium",
-              "strong": "Strong",
-              "pet_hair_boost": "Pet Hair Boost"
+              "auto": "Auto"
             }
           }
         }
       }
     },
     "select": {
+      "operating_mode": {
+        "name": "Mode",
+        "options": {
+          "auto": "Auto",
+          "sleep": "Sleep",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "eco": "Eco",
+          "turbo": "Turbo",
+          "pet_hair_boost": "Pet Hair Boost"
+        }
+      },
       "display_brightness": {
         "name": "Display brightness",
         "options": { "bright": "Bright", "low": "Low", "off": "Off" }

@@ -74,8 +74,30 @@ MODE_TO_PRESET = {MODE_SLEEP: PRESET_SLEEP, MODE_NATURAL: PRESET_NATURAL}
 
 # Manual speed steps (1/2/3) mapped to HA percentage with speed_count=3.
 SPEED_COUNT = 3
-AC3360_SPEED_COUNT = 5
 # ordered_list_step default HA gives [33, 67, 100] for 3 speeds; level = round(pct/100*3)
+
+# AC3360 operating modes. Keep the mode code and Apple Home slider percentage
+# together so reads, writes, and the HA mode select cannot drift apart.
+AC3360_MODE_OPTIONS = (
+    ("auto", 0, None),
+    ("sleep", 17, 10),
+    ("low", 1, 20),
+    ("medium", 2, 35),
+    ("high", 3, 50),
+    ("eco", 16, 60),
+    ("turbo", 18, 85),
+    ("pet_hair_boost", 49, 100),
+)
+AC3360_MODE_TO_PERCENTAGE = {
+    code: percentage
+    for _key, code, percentage in AC3360_MODE_OPTIONS
+    if percentage is not None
+}
+AC3360_PERCENTAGE_TO_MODE = tuple(
+    (percentage, code)
+    for _key, code, percentage in AC3360_MODE_OPTIONS
+    if percentage is not None
+)
 
 # MQTT shadow topics
 TOPIC_GET = "$aws/things/{thing}/shadow/get"
@@ -104,36 +126,13 @@ MODEL_CAPABILITIES = {
     },
     MODEL_AC3360: {
         "translation_key": "ac3360",
-        "preset_to_mode": {
-            "auto": 0,
-            "sleep": 17,
-            "middle": 2,
-            "strong": 16,
-            "pet_hair_boost": 49,
-        },
-        "mode_to_preset": {
-            0: "auto",
-            17: "sleep",
-            2: "middle",
-            16: "strong",
-            49: "pet_hair_boost",
-        },
-        "preset_modes": ["auto", "sleep", "middle", "strong", "pet_hair_boost"],
+        "preset_to_mode": {"auto": 0},
+        "mode_to_preset": {0: "auto"},
+        "preset_modes": ["auto"],
         "oscillation": False,
         "percentage_control": True,
-        "speed_count": AC3360_SPEED_COUNT,
-        "percentage_modes": {20: 0, 40: 17, 60: 2, 80: 16, 100: 49},
-        "mode_to_percentage": {0: 20, 17: 40, 2: 60, 16: 80, 49: 100},
-        "mode_names": {
-            0: "auto",
-            17: "sleep",
-            2: "medium",
-            16: "strong",
-            49: "pet_hair_boost",
-            1: "low",
-            3: "high",
-            18: "turbo",
-        },
+        "mode_to_percentage": AC3360_MODE_TO_PERCENTAGE,
+        "mode_names": {code: key for key, code, _pct in AC3360_MODE_OPTIONS},
     },
 }
 
@@ -173,7 +172,7 @@ __all__ = [
     "MODE_SLEEP", "MODE_NATURAL", "PRESET_SLEEP", "PRESET_NATURAL",
     "PRESET_MODES", "PRESET_TO_MODE", "MODE_TO_PRESET",
     "SPEED_COUNT",
-    "AC3360_SPEED_COUNT",
+    "AC3360_MODE_OPTIONS", "AC3360_MODE_TO_PERCENTAGE", "AC3360_PERCENTAGE_TO_MODE",
     "TOPIC_GET", "TOPIC_GET_ACCEPTED", "TOPIC_GET_REJECTED",
     "TOPIC_UPDATE", "TOPIC_UPDATE_ACCEPTED", "TOPIC_UPDATE_REJECTED",
     "TOPIC_UPDATE_DOCUMENTS",
