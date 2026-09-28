@@ -8,8 +8,8 @@ Maps the verified D-code shadow state to a Home Assistant fan entity:
   oscillate       CX3550 only: D0320F 23040=on / 0=off
 
 CX3550 exposes manual speeds as percentages and its sleep/natural presets.
-AC3360 exposes Auto as its sole fan preset and maps a fine percentage slider to
-seven named manual modes, all derived from and writing only D0310C.
+AC3360 exposes all eight named D0310C modes as fan presets and maps a fine
+percentage slider to the same reported modes.
 """
 from __future__ import annotations
 
@@ -72,8 +72,6 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
     _attr_has_entity_name = True
     _attr_name = None  # use the device name
     _attr_speed_count = None
-    # A safe default is available even during the earliest entity property read.
-    _last_manual_percentage = 35
 
     def __init__(self, coordinator: PhilipsAirplusCoordinator) -> None:
         super().__init__(coordinator)
@@ -86,7 +84,6 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         self._attr_speed_count = self._capabilities.get("speed_count")
         self._attr_unique_id = f"{coordinator.device_id}_fan"
         self._attr_supported_features = _supported_features(self._capabilities)
-        self._last_manual_percentage = 35
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -127,14 +124,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         mode_to_percentage = self._capabilities.get("mode_to_percentage")
         if mode_to_percentage is not None:
             mode = _norm_mode(rep.get(D_MODE))
-            if mode == 0:
-                return self._last_manual_percentage
-            manual_percentage = mode_to_percentage.get(mode)
-            if manual_percentage is not None:
-                self._last_manual_percentage = manual_percentage
-                return manual_percentage
-            # Keep the last safe slider value for unknown future firmware modes.
-            return self._last_manual_percentage
+            return mode_to_percentage.get(mode)
         if not self._capabilities["percentage_control"]:
             return None
         level = rep.get(D_SPEED)
@@ -174,8 +164,8 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
         desired: dict = {D_POWER: 1}
         preset_to_mode = self._capabilities["preset_to_mode"]
         if self._is_ac3360:
-            if preset_mode == "auto":
-                desired[D_MODE] = 0
+            if preset_mode in preset_to_mode:
+                desired[D_MODE] = preset_to_mode[preset_mode]
             elif percentage is not None:
                 mode = _ac3360_percentage_to_mode(percentage)
                 if mode is None:
@@ -236,7 +226,7 @@ class PhilipsAirplusFan(CoordinatorEntity, FanEntity):
 
 
 def _ac3360_percentage_to_mode(percentage: int) -> int | None:
-    """Map a slider value to the nearest canonical manual AC3360 mode."""
+    """Map a slider value to the nearest canonical AC3360 mode; zero is off."""
     try:
         pct = max(0, min(100, int(percentage)))
     except (TypeError, ValueError):

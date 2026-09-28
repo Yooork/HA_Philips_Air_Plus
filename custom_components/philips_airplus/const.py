@@ -77,9 +77,9 @@ SPEED_COUNT = 3
 # ordered_list_step default HA gives [33, 67, 100] for 3 speeds; level = round(pct/100*3)
 
 # AC3360 operating modes. Keep the mode code and Apple Home slider percentage
-# together so reads, writes, and the HA mode select cannot drift apart.
+# together so fan preset readback, slider readback, and writes cannot drift apart.
 AC3360_MODE_OPTIONS = (
-    ("auto", 0, None),
+    ("auto", 0, 1),
     ("sleep", 17, 10),
     ("low", 1, 20),
     ("medium", 2, 35),
@@ -126,9 +126,9 @@ MODEL_CAPABILITIES = {
     },
     MODEL_AC3360: {
         "translation_key": "ac3360",
-        "preset_to_mode": {"auto": 0},
-        "mode_to_preset": {0: "auto"},
-        "preset_modes": ["auto"],
+        "preset_to_mode": {key: code for key, code, _percentage in AC3360_MODE_OPTIONS},
+        "mode_to_preset": {code: key for key, code, _percentage in AC3360_MODE_OPTIONS},
+        "preset_modes": [key for key, _code, _percentage in AC3360_MODE_OPTIONS],
         "oscillation": False,
         "percentage_control": True,
         # HA derives percentage_step as 100 / speed_count. Keep fine slider

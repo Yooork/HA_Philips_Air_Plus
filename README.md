@@ -98,13 +98,14 @@ full validation as CX3550/01.
 
 Supported AC3360 functionality:
 
-- Power, Auto as the only fan preset, a fine percentage slider mapped to seven manual modes, and one Home Assistant Mode select
+- Power, eight named fan presets in Home Assistant, and a fine percentage slider on the same fan entity
 - Pet lock, display brightness (bright / low / off), and beep
 - PM2.5, allergen index, raw gas index, temperature, and humidity sensors
 
-The Auto preset, percentage control, and Mode select use the same D0310C state,
-so their readback stays synchronized. Slider points are 10/20/35/50/60/85/100;
-D0310D remains device-reported state and is never written.
+The presets and percentage control use the same D0310C state, so their
+readback stays synchronized. Slider points are 1/10/20/35/50/60/85/100, where
+1% selects Auto and 0% turns the fan off. D0310D remains device-reported state
+and is never written.
 
 AC3360 does not expose oscillation. Its light, mood-light, and air-quality-light
 features are currently unmapped and are not supported. The gas index is shown

@@ -53,26 +53,20 @@
         "state_attributes": {
           "preset_mode": {
             "state": {
-              "auto": "Auto"
+              "auto": "Auto",
+              "sleep": "Ruhemodus",
+              "low": "Niedrig",
+              "medium": "Mitte",
+              "high": "Hoch",
+              "eco": "Öko",
+              "turbo": "Turbo",
+              "pet_hair_boost": "Fellhaar-Boost"
             }
           }
         }
       }
     },
     "select": {
-      "operating_mode": {
-        "name": "Betriebsart",
-        "options": {
-          "auto": "Auto",
-          "sleep": "Ruhemodus",
-          "low": "Niedrig",
-          "medium": "Mitte",
-          "high": "Hoch",
-          "eco": "Öko",
-          "turbo": "Turbo",
-          "pet_hair_boost": "Fellhaar-Boost"
-        }
-      },
       "display_brightness": {
         "name": "Displayhelligkeit",
         "options": { "bright": "Hell", "low": "Niedrig", "off": "Aus" }
